@@ -772,6 +772,7 @@ sealed interface Screen : NavKey {
     data class SettingProviderDetail(val providerId: String) : Screen
 
     /** 多 Key 管理页 */
+    @Serializable
     data class MultiKeyManage(val providerId: String) : Screen
 
     @Serializable
