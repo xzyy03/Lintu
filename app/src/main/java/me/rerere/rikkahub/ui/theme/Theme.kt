@@ -109,7 +109,7 @@ fun RikkahubTheme(
             typography = Typography,
             shapes = AppShapes,
             content = content,
-            motionScheme = MotionScheme.expressive()
+            motionScheme = MotionScheme.standard()
         )
     }
 }

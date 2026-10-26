@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -125,6 +126,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingMcpDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingMcpPage
 import me.rerere.rikkahub.ui.pages.setting.SettingModelPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPage
+import me.rerere.rikkahub.ui.pages.setting.MultiKeyManagePage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchDetailPage
@@ -335,20 +337,38 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                        // 只做水平位移 + 轻微淡入淡出：去掉原来的 scale 0.7，避免缩放带来的
+                        // 重绘与「画面突然缩小」的不适感，同时统一时长让进出更跟手。
                         transitionSpec = {
-                            if (backStack.size == 1) fadeIn() togetherWith fadeOut()
-                            else {
-                                slideInHorizontally { it } togetherWith
-                                    slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut()
+                            if (backStack.size == 1) {
+                                fadeIn(tween(220)) togetherWith fadeOut(tween(180))
+                            } else {
+                                (
+                                    slideInHorizontally(tween(280)) { it / 4 } +
+                                        fadeIn(tween(220))
+                                    ) togetherWith (
+                                    slideOutHorizontally(tween(280)) { -it / 8 } +
+                                        fadeOut(tween(180))
+                                    )
                             }
                         },
                         popTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            (
+                                slideInHorizontally(tween(280)) { -it / 8 } +
+                                    fadeIn(tween(220))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(280)) { it / 4 } +
+                                    fadeOut(tween(180))
+                                )
                         },
                         predictivePopTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            (
+                                slideInHorizontally(tween(280)) { -it / 8 } +
+                                    fadeIn(tween(220))
+                                ) togetherWith (
+                                slideOutHorizontally(tween(280)) { it / 4 } +
+                                    fadeOut(tween(180))
+                                )
                         },
                         entryProvider = entryProvider {
                             entry<Screen.Chat>(
@@ -486,6 +506,10 @@ class RouteActivity : ComponentActivity() {
                             entry<Screen.SettingProviderDetail> { key ->
                                 val id = Uuid.parse(key.providerId)
                                 SettingProviderDetailPage(id = id)
+                            }
+
+                            entry<Screen.MultiKeyManage> { key ->
+                                MultiKeyManagePage(providerId = key.providerId)
                             }
 
                             entry<Screen.SettingModels> {
@@ -746,6 +770,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class SettingProviderDetail(val providerId: String) : Screen
+
+    /** 多 Key 管理页 */
+    data class MultiKeyManage(val providerId: String) : Screen
 
     @Serializable
     data object SettingModels : Screen

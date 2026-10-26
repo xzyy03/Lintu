@@ -289,6 +289,14 @@
   <string name="chat_page_new_chat">New Chat</string>
   <string name="chat_page_new_message">New message</string>
   <string name="chat_page_nickname_placeholder">Please enter nickname</string>
+  <string name="chat_drawer_multi_select">Select</string>
+  <string name="chat_drawer_multi_select_exit">Cancel</string>
+  <string name="chat_drawer_multi_select_count">%1$d selected</string>
+  <string name="chat_drawer_multi_delete">Delete</string>
+  <string name="chat_drawer_multi_delete_confirm_title">Delete conversations</string>
+  <string name="chat_drawer_multi_delete_confirm_text">Delete %1$d selected conversations? This cannot be undone.</string>
+  <string name="chat_drawer_multi_select_all">Select all</string>
+  <string name="chat_drawer_multi_select_none">Clear</string>
   <string name="chat_page_no_conversations">No conversations</string>
   <string name="chat_page_regenerate_title">Regenerate title</string>
   <string name="chat_page_save">Save</string>
@@ -936,6 +944,9 @@
   <string name="setting_provider_page_add_provider_override">Add Provider Override</string>
   <string name="setting_provider_page_advanced_settings">Advanced Settings</string>
   <string name="setting_provider_page_api_base_url">API Base Url</string>
+  <string name="setting_provider_page_multi_key_hint">Supports multiple keys: separate with spaces, newlines or commas, they will be rotated automatically</string>
+  <string name="setting_provider_page_multi_key_count">Detected %1$d keys, rotating automatically</string>
+  <string name="setting_provider_page_multi_key_single">Single key</string>
   <string name="setting_provider_page_api_key">API Key</string>
   <string name="setting_provider_page_api_path">API Path</string>
   <string name="setting_provider_page_avaliable_models">Avaliable Models</string>
@@ -1793,4 +1804,20 @@
   <string name="setting_model_page_memory_model">Memory Consolidation Model</string>
   <string name="setting_model_page_memory_model_desc">Model used to organize conversations into long-term memory in the background; uses the fast model when not set</string>
   <string name="setting_model_page_memory_model_follow_fast">Same as fast model</string>
+  <string name="multi_key_title">Multi-Key Management</string>
+  <string name="multi_key_enable">Multi-key mode</string>
+  <string name="multi_key_enable_desc">Manage multiple API keys with load balancing</string>
+  <string name="multi_key_total">Total</string>
+  <string name="multi_key_healthy">Healthy</string>
+  <string name="multi_key_error">Error</string>
+  <string name="multi_key_untested">Untested</string>
+  <string name="multi_key_strategy">Strategy</string>
+  <string name="multi_key_strategy_round_robin">Round robin</string>
+  <string name="multi_key_strategy_random">Random</string>
+  <string name="multi_key_strategy_lru">Least recently used</string>
+  <string name="multi_key_empty">No keys yet, tap + to add</string>
+  <string name="multi_key_add">Add key</string>
+  <string name="multi_key_edit">Edit key</string>
+  <string name="multi_key_delete_title">Delete key</string>
+  <string name="multi_key_delete_text">Delete this key?</string>
 </resources>

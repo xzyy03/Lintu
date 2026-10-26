@@ -289,6 +289,14 @@
   <string name="chat_page_new_chat">新聊天</string>
   <string name="chat_page_new_message">新消息</string>
   <string name="chat_page_nickname_placeholder">请输入昵称</string>
+  <string name="chat_drawer_multi_select">多选</string>
+  <string name="chat_drawer_multi_select_exit">取消</string>
+  <string name="chat_drawer_multi_select_count">已选 %1$d 项</string>
+  <string name="chat_drawer_multi_delete">删除</string>
+  <string name="chat_drawer_multi_delete_confirm_title">删除会话</string>
+  <string name="chat_drawer_multi_delete_confirm_text">确定删除选中的 %1$d 个会话？此操作不可恢复。</string>
+  <string name="chat_drawer_multi_select_all">全选</string>
+  <string name="chat_drawer_multi_select_none">清空</string>
   <string name="chat_page_no_conversations">没有对话记录</string>
   <string name="chat_page_regenerate_title">重新生成标题</string>
   <string name="chat_page_save">保存</string>
@@ -905,6 +913,9 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_provider_page_add_provider_override">添加提供商重写</string>
   <string name="setting_provider_page_advanced_settings">高级设置</string>
   <string name="setting_provider_page_api_base_url">API Base Url</string>
+  <string name="setting_provider_page_multi_key_hint">支持多个 Key：用空格、换行或逗号分隔，会自动轮询使用</string>
+  <string name="setting_provider_page_multi_key_count">已识别 %1$d 个 Key，将自动轮询</string>
+  <string name="setting_provider_page_multi_key_single">单个 Key</string>
   <string name="setting_provider_page_api_key">API Key</string>
   <string name="setting_provider_page_api_path">API 路径</string>
   <string name="setting_provider_page_avaliable_models">可用模型</string>
@@ -1795,4 +1806,20 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_model_page_memory_model">记忆整理模型</string>
   <string name="setting_model_page_memory_model_desc">用于在后台将对话整理为长期记忆的模型；未设置时使用快速模型</string>
   <string name="setting_model_page_memory_model_follow_fast">跟随快速模型</string>
+  <string name="multi_key_title">多Key管理</string>
+  <string name="multi_key_enable">多 Key 模式</string>
+  <string name="multi_key_enable_desc">管理多个 API Key 并自动负载均衡</string>
+  <string name="multi_key_total">总数</string>
+  <string name="multi_key_healthy">正常</string>
+  <string name="multi_key_error">错误</string>
+  <string name="multi_key_untested">未检测</string>
+  <string name="multi_key_strategy">负载均衡策略</string>
+  <string name="multi_key_strategy_round_robin">轮询</string>
+  <string name="multi_key_strategy_random">随机</string>
+  <string name="multi_key_strategy_lru">最久未用</string>
+  <string name="multi_key_empty">还没有 Key，点右上角 + 添加</string>
+  <string name="multi_key_add">添加 Key</string>
+  <string name="multi_key_edit">编辑 Key</string>
+  <string name="multi_key_delete_title">删除 Key</string>
+  <string name="multi_key_delete_text">确定删除这个 Key？</string>
 </resources>

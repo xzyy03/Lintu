@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Tick02
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.Forward02
 import me.rerere.hugeicons.stroke.Pin
@@ -10,6 +11,7 @@ import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -87,7 +89,13 @@ fun ColumnScope.ConversationList(
     onRegenerateTitle: (Conversation) -> Unit = {},
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
-    onMoveToFolder: (Conversation) -> Unit = {}
+    onMoveToFolder: (Conversation) -> Unit = {},
+    // 多选模式：非 null 时表示正在多选，回调负责增删选中项
+    selectionMode: Boolean = false,
+    selectedIds: Set<Uuid> = emptySet(),
+    onToggleSelect: (Conversation) -> Unit = {},
+    onLongPressEnterSelection: (Conversation) -> Unit = {},
+    onExitSelection: () -> Unit = {},
 ) {
     var hasScrolledToCurrent by remember(current.id) { mutableStateOf(false) }
     // 列表顶部若放了 header，会话项在 LazyColumn 中的位置要往后挪一位
@@ -174,6 +182,10 @@ fun ColumnScope.ConversationList(
                         onPin = onPin,
                         onMoveToAssistant = onMoveToAssistant,
                         onMoveToFolder = onMoveToFolder,
+                        selectionMode = selectionMode,
+                        checked = item.conversation.id in selectedIds,
+                        onToggleSelect = onToggleSelect,
+                        onLongPressEnterSelection = onLongPressEnterSelection,
                         modifier = Modifier.animateItem()
                     )
                 }
@@ -245,14 +257,18 @@ private fun ConversationItem(
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
     onMoveToFolder: (Conversation) -> Unit = {},
-    onClick: (Conversation) -> Unit
+    onClick: (Conversation) -> Unit,
+    selectionMode: Boolean = false,
+    checked: Boolean = false,
+    onToggleSelect: (Conversation) -> Unit = {},
+    onLongPressEnterSelection: (Conversation) -> Unit = {},
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusManager = LocalFocusManager.current
-    val backgroundColor = if (selected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        Color.Transparent
+    val backgroundColor = when {
+        checked -> MaterialTheme.colorScheme.primaryContainer
+        selected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+        else -> Color.Transparent
     }
     var showDropdownMenu by remember {
         mutableStateOf(false)
@@ -263,11 +279,17 @@ private fun ConversationItem(
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
-                onClick = { onClick(conversation) },
+                onClick = {
+                    if (selectionMode) onToggleSelect(conversation) else onClick(conversation)
+                },
                 onLongClick = {
                     // Also clear chat input focus when the drawer is permanently visible.
                     focusManager.clearFocus(force = true)
-                    showDropdownMenu = true
+                    if (selectionMode) {
+                        onToggleSelect(conversation)
+                    } else {
+                        onLongPressEnterSelection(conversation)
+                    }
                 }
             )
             .background(backgroundColor),
@@ -278,6 +300,36 @@ private fun ConversationItem(
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (selectionMode) {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (checked) MaterialTheme.colorScheme.primary
+                            else Color.Transparent
+                        )
+                        .then(
+                            if (checked) Modifier
+                            else Modifier.border(
+                                width = 1.5.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = CircleShape,
+                            )
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (checked) {
+                        Icon(
+                            imageVector = HugeIcons.Tick02,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.size(10.dp))
+            }
             Text(
                 text = conversation.title.ifBlank { stringResource(id = R.string.chat_page_new_message) },
                 maxLines = 1,

@@ -1,5 +1,12 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.AnimatedVisibility
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -125,6 +132,11 @@ fun ChatDrawerContent(
         initialFirstVisibleItemIndex = drawerVm.scrollIndex,
         initialFirstVisibleItemScrollOffset = drawerVm.scrollOffset,
     )
+
+    // 会话多选：长按任一会话进入，支持批量删除
+    var selectionMode by remember { mutableStateOf(false) }
+    val selectedIds = remember { mutableStateListOf<Uuid>() }
+    var showBatchDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(conversationListState) {
         snapshotFlow {
@@ -294,7 +306,118 @@ fun ChatDrawerContent(
                     },
                 )
             }
+
+            // 多选操作栏：进入多选后替换掉常规快捷操作
+            AnimatedVisibility(
+                visible = selectionMode,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.chat_drawer_multi_select_count, selectedIds.size),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(
+                            onClick = {
+                                if (selectedIds.size == conversations.itemCount) {
+                                    selectedIds.clear()
+                                } else {
+                                    selectedIds.clear()
+                                    for (i in 0 until conversations.itemCount) {
+                                        (conversations.peek(i) as? ConversationListItem.Item)
+                                            ?.conversation?.let { selectedIds.add(it.id) }
+                                    }
+                                }
+                            },
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (selectedIds.size == conversations.itemCount) {
+                                        R.string.chat_drawer_multi_select_none
+                                    } else {
+                                        R.string.chat_drawer_multi_select_all
+                                    }
+                                )
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                selectionMode = false
+                                selectedIds.clear()
+                            },
+                        ) {
+                            Text(stringResource(R.string.chat_drawer_multi_select_exit))
+                        }
+                        TextButton(
+                            onClick = { showBatchDeleteConfirm = true },
+                            enabled = selectedIds.isNotEmpty(),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.chat_drawer_multi_delete),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    // 批量删除确认
+    if (showBatchDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showBatchDeleteConfirm = false },
+            title = { Text(stringResource(R.string.chat_drawer_multi_delete_confirm_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.chat_drawer_multi_delete_confirm_text,
+                        selectedIds.size
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val ids = selectedIds.toList()
+                        val deletingCurrent = ids.any { it == current.id }
+                        showBatchDeleteConfirm = false
+                        selectionMode = false
+                        selectedIds.clear()
+                        scope.launch {
+                            ids.forEach { id ->
+                                repo.getConversationById(id)?.let { vm.deleteConversation(it).join() }
+                            }
+                            conversations.refresh()
+                            if (deletingCurrent) {
+                                navigateToChatPage(navController)
+                            }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatchDeleteConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
 
     ModalDrawerSheet(
@@ -342,7 +465,24 @@ fun ChatDrawerContent(
                 onMoveToFolder = {
                     conversationToMoveFolder = it
                     showMoveToFolderSheet = true
-                }
+                },
+                selectionMode = selectionMode,
+                selectedIds = selectedIds.toSet(),
+                onToggleSelect = { conversation ->
+                    if (!selectedIds.remove(conversation.id)) {
+                        selectedIds.add(conversation.id)
+                    }
+                    // 全部取消勾选时自动退出多选
+                    if (selectedIds.isEmpty()) selectionMode = false
+                },
+                onLongPressEnterSelection = { conversation ->
+                    selectionMode = true
+                    if (conversation.id !in selectedIds) selectedIds.add(conversation.id)
+                },
+                onExitSelection = {
+                    selectionMode = false
+                    selectedIds.clear()
+                },
             )
 
             if (memoryDreaming) {

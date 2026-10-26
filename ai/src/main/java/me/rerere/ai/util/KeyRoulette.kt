@@ -21,7 +21,22 @@ interface KeyRoulette {
 
 private val SPLIT_KEY_REGEX = "[\\s,]+".toRegex() // 空格换行和逗号
 
-private fun splitKey(key: String): List<String> {
+/**
+ * 把用户填的一串 Key 拆成独立 Key 列表。
+ *
+ * 支持用空格、换行或逗号分隔，便于一次粘贴多个 Key 做轮询：
+ * ```
+ * sk-aaa
+ * sk-bbb
+ * sk-ccc
+ * ```
+ * UI 层也复用这个函数统计已识别的 Key 数量。
+ */
+fun splitApiKeys(key: String): List<String> {
+    // 多 Key 管理界面保存的是 MultiKeyConfig JSON，先解出启用中的 Key
+    key.parseMultiKeyConfig()?.let { config ->
+        return config.activeKeyValues().distinct()
+    }
     return key
         .split(SPLIT_KEY_REGEX)
         .map { it.trim() }
@@ -29,16 +44,25 @@ private fun splitKey(key: String): List<String> {
         .distinct()
 }
 
+private fun splitKey(key: String): List<String> = splitApiKeys(key)
+
 private class DefaultKeyRoulette : KeyRoulette {
     override fun next(keys: String, providerId: String): String {
         val keyList = splitKey(keys)
-        return if (keyList.isNotEmpty()) {
-            keyList.random()
-        } else {
-            keys
+        return when {
+            keyList.isEmpty() -> keys
+            // 多 Key 配置里指定了策略就按策略走，否则沿用上游的随机
+            keys.parseMultiKeyConfig()?.strategy == KeyStrategy.ROUND_ROBIN -> {
+                val counter = ROUND_ROBIN_COUNTER.getOrPut(providerId.ifBlank { "default" }) { java.util.concurrent.atomic.AtomicInteger() }
+                keyList[Math.floorMod(counter.getAndIncrement(), keyList.size)]
+            }
+            else -> keyList.random()
         }
     }
 }
+
+/** 轮询游标：按 providerId 分别计数，进程内有效即可（LRU 实现另有持久化） */
+private val ROUND_ROBIN_COUNTER = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger>()
 
 private const val LRU_CACHE_FILE = "lru_key_roulette.json"
 private const val EXPIRE_DURATION_MS = 24 * 60 * 60 * 1000L // 1 天
