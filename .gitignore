@@ -1,0 +1,23 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.cursor
+.history
+.kotlin
+
+# 本地签名密钥，不入库
+*.jks
+*.keystore
+keystore.properties
+
+# web-ui 依赖与产物
+web-ui/node_modules
+web-ui/build
+web/src/main/resources/static
