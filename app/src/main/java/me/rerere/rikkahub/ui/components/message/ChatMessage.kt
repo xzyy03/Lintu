@@ -582,8 +582,8 @@ private fun ChatMessageBubble(
                     Modifier
                 },
             )
-            // MarkdownBlock 自带 4dp 的水平内边距
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            // MarkdownBlock 自带 4dp 的水平内边距；纵向只留 4dp，比文字略高一点
+            .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
         CompositionLocalProvider(LocalContentColor provides contentColor) { content() }
     }

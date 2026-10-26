@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <resources>
+  <string name="about_page_checking_update">Checking for updates…</string>
+  <string name="about_page_already_latest">You are on the latest version (%s)</string>
   <string name="about_page_upstream_repo">Upstream Repo</string>
   <string name="about_page_project_repo">This Project</string>
   <string name="about_page_qq_group">Community Group</string>
@@ -779,6 +781,7 @@
   <string name="setting_mcp_page_transport_type">Transport Type</string>
   <string name="setting_mcp_page_transport_type_desc">Select the transport protocol type for the MCP server</string>
   <string name="setting_mcp_page_url_label">URL</string>
+  <string name="setting_model_page_follow_current">Follow current model</string>
   <string name="setting_model_page_chat_model">Chat Model</string>
   <string name="setting_model_page_chat_model_desc">Global default chat model</string>
   <string name="setting_model_page_fast_model">Fast Model</string>

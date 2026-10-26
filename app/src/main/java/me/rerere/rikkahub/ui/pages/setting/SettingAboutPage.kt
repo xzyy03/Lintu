@@ -66,6 +66,24 @@ import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.writeClipboardText
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.easteregg.EmojiBurstHost
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedCard
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
+import me.rerere.rikkahub.ui.context.LocalToaster
+import me.rerere.rikkahub.utils.UpdateChecker
+import me.rerere.rikkahub.utils.UpdateDownload
+import me.rerere.rikkahub.utils.UpdateInfo
+import me.rerere.rikkahub.utils.UiState
+import me.rerere.rikkahub.utils.Version
+import me.rerere.ui.toast.ToastType
+import org.koin.compose.koinInject
 
 private const val UPSTREAM_REPO = "https://github.com/rikkahub/rikkahub"
 private const val PROJECT_REPO = "https://github.com/xzyy03/Lintu"
@@ -76,6 +94,9 @@ fun SettingAboutPage() {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val context = LocalContext.current
     val navController = LocalNavController.current
+    val updateChecker: UpdateChecker = koinInject()
+    val updateState by updateChecker.updateState.collectAsStateWithLifecycle()
+    var showUpdateSheet by remember { mutableStateOf(false) }
     val soundOptions = remember { listOf(R.raw.bingbingbing, R.raw.gangguan) }
     val soundEffectPlayer = remember(context) { SoundEffectPlayer(context) }
     DisposableEffect(soundEffectPlayer) {
@@ -239,7 +260,10 @@ fun SettingAboutPage() {
                             headlineContent = { Text(stringResource(R.string.about_page_qq_group)) },
                         )
                         item(
-                            onClick = { context.openUrl("$PROJECT_REPO/releases") },
+                            onClick = {
+                                updateChecker.refresh()
+                                showUpdateSheet = true
+                            },
                             leadingContent = { CardGroupIcon(HugeIcons.Download01, containerColor = containerColor, contentColor = contentColor) },
                             supportingContent = { Text("$PROJECT_REPO/releases") },
                             headlineContent = { Text(stringResource(R.string.about_page_check_update)) },
@@ -249,6 +273,109 @@ fun SettingAboutPage() {
                             leadingContent = { CardGroupIcon(HugeIcons.File02, containerColor = containerColor, contentColor = contentColor) },
                             supportingContent = { Text("$UPSTREAM_REPO/blob/master/LICENSE") },
                             headlineContent = { Text(stringResource(R.string.about_page_license)) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showUpdateSheet) {
+        val toaster = LocalToaster.current
+        UpdateResultSheet(
+            state = updateState,
+            onDismiss = { showUpdateSheet = false },
+            onDownload = { item ->
+                updateChecker.downloadUpdate(context, item)
+                showUpdateSheet = false
+                toaster.show("正在下载，请在状态栏查看进度", type = ToastType.Info)
+            },
+        )
+    }
+}
+
+/**
+ * 「版本更新」的结果弹层：检查中 / 已是最新 / 发现新版本（可直接下载）/ 失败。
+ */
+@Composable
+private fun UpdateResultSheet(
+    state: UiState<UpdateInfo>,
+    onDismiss: () -> Unit,
+    onDownload: (UpdateDownload) -> Unit,
+) {
+    val current = remember { Version(BuildConfig.VERSION_NAME) }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            when (state) {
+                is UiState.Loading, UiState.Idle -> {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                    Text(
+                        text = stringResource(R.string.about_page_checking_update),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                is UiState.Error -> {
+                    Text(
+                        text = stringResource(R.string.update_card_check_failed),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        text = state.error.message ?: stringResource(R.string.update_card_unknown_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                is UiState.Success -> {
+                    val info = state.data
+                    Text(
+                        text = info.version,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (Version(info.version) > current) {
+                        if (info.changelog.isNotBlank()) {
+                            MarkdownBlock(
+                                content = info.changelog,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 300.dp)
+                                    .verticalScroll(rememberScrollState()),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        info.downloads.forEach { item ->
+                            OutlinedCard(
+                                onClick = { onDownload(item) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                ListItem(
+                                    headlineContent = { Text(item.name) },
+                                    supportingContent = { Text(item.size) },
+                                    leadingContent = {
+                                        Icon(HugeIcons.Download01, contentDescription = null)
+                                    },
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(
+                                R.string.about_page_already_latest,
+                                BuildConfig.VERSION_NAME,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

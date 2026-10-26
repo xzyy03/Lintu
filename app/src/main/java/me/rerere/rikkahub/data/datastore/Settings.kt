@@ -37,8 +37,8 @@ data class Settings(
     val displaySetting: DisplaySetting = DisplaySetting(),
     val networkSetting: NetworkSetting = NetworkSetting(),
     val favoriteModels: List<Uuid> = emptyList(),
-    val chatModelId: Uuid = Uuid.random(),
-    val fastModelId: Uuid = Uuid.random(),
+    val chatModelId: Uuid? = null, // null 表示跟随当前调用的模型
+    val fastModelId: Uuid? = null, // null 表示跟随当前调用的模型
     val fastModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     // 记忆整理用的模型，没设置时用快速模型
     val memoryModelId: Uuid? = null,
@@ -57,6 +57,8 @@ data class Settings(
     val ocrPrompt: String = DEFAULT_OCR_PROMPT,
     val assistantId: Uuid = DEFAULT_ASSISTANT_ID,
     val providers: List<ProviderSetting> = DEFAULT_PROVIDERS,
+    /** 二改版：是否已执行过「清空历史内置供应商」的一次性迁移 */
+    val providersCleared: Boolean = false,
     val assistants: List<Assistant> = DEFAULT_ASSISTANTS,
     val assistantTags: List<Tag> = emptyList(),
     val searchServices: List<SearchServiceOptions> = listOf(SearchServiceOptions.DEFAULT),

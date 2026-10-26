@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -200,6 +201,8 @@ internal fun ModelSelectorButton(
     onlyIcon: Boolean = false,
     allowClear: Boolean = false,
     onClear: () -> Unit = {},
+    // 长按进入 AI 供应商配置，短按仍打开模型列表
+    onLongClick: (() -> Unit)? = null,
 ) {
     val model = state.currentModel
 
@@ -240,10 +243,20 @@ internal fun ModelSelectorButton(
             }
         }
     } else {
-        IconButton(
-            onClick = {
-                state.open()
-            },
+        val interactionSource = remember { MutableInteractionSource() }
+        // 复刻原版 IconButton 的 48dp 触摸槽与 36dp 图标；
+        // 不用 IconButton 是因为它内部的 clickable 会吞掉长按，这里直接上 combinedClickable
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = { state.open() },
+                    onLongClick = onLongClick,
+                ),
         ) {
             if (model != null) {
                 AutoAIIcon(

@@ -129,6 +129,8 @@ class SettingsStore internal constructor(
 
         // 提供商
         val PROVIDERS = stringPreferencesKey("providers")
+        // 二改版：是否已清空过历史内置供应商
+        val PROVIDERS_CLEARED = booleanPreferencesKey("providers_cleared")
 
         // 助手
         val SELECT_ASSISTANT = stringPreferencesKey("select_assistant")

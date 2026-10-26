@@ -39,7 +39,16 @@ fun List<ProviderSetting>.findModelById(uuid: Uuid): Model? {
  * 已持久化的会话有自己的配置快照，应改用 [me.rerere.rikkahub.data.model.getChatModelOf]。
  */
 fun Settings.getCurrentChatModel(): Model? {
-    return findModelById(this.getCurrentAssistant().chatModelId ?: this.chatModelId)
+    val assistantModelId = this.getCurrentAssistant().chatModelId ?: this.chatModelId
+    return assistantModelId?.let { findModelById(it) }
+}
+
+/**
+ * 快速模型（标题、建议等后台任务用）。未显式指定时跟随当前聊天模型。
+ */
+fun Settings.getFastModel(): Model? {
+    val id = this.fastModelId ?: this.chatModelId
+    return id?.let { findModelById(it) } ?: getCurrentChatModel()
 }
 
 /**

@@ -92,6 +92,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.asr.ASRStatus
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.McpServer
 import me.rerere.hugeicons.stroke.ArrowUp02
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
@@ -136,6 +137,8 @@ fun ChatInput(
     onUpdateChatModel: (Model) -> Unit,
     onUpdateAssistant: (Assistant) -> Unit,
     onMoreClick: () -> Unit,
+    onOpenProviders: () -> Unit = {},
+    onOpenMcp: () -> Unit = {},
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
     onLongSendClick: () -> Unit,
@@ -293,11 +296,12 @@ fun ChatInput(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            // Model Picker
+                            // Model Picker：短按选模型，长按进供应商配置
                             ModelSelectorButton(
                                 state = modelListState,
                                 onlyIcon = true,
                                 modifier = Modifier,
+                                onLongClick = onOpenProviders,
                             )
 
                             // Reasoning
@@ -309,6 +313,31 @@ fun ChatInput(
                                     },
                                     onlyIcon = true,
                                 )
+                            }
+
+                            // MCP 服务器：与思维按钮同尺寸（24dp 图标 + 8dp 内边距），用主色与其它图标一致
+                            Surface(
+                                onClick = onOpenMcp,
+                                shape = CircleShape,
+                                tonalElevation = 0.dp,
+                                color = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        modifier = Modifier.size(24.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = HugeIcons.McpServer,
+                                            contentDescription = stringResource(R.string.setting_page_mcp),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
                             }
 
                         }

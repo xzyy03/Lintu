@@ -1,27 +1,36 @@
 package me.rerere.rikkahub.data.datastore
 
+import kotlin.uuid.Uuid
+
 /** 读盘后和每次修改后都要过一遍，保证内存里的设置始终是规整的。 */
 internal fun Settings.normalized(): Settings =
-    withBuiltInDefaults().withoutInvalidReferences().withValuesInRange()
+    clearLegacyProviders().withBuiltInDefaults().withoutInvalidReferences().withValuesInRange()
+
+/**
+ * 二改版一次性迁移：清空所有已落盘的供应商。
+ *
+ * 只把 DEFAULT_PROVIDERS 置空不够 —— 设备上早先版本写进 DataStore 的 providers
+ * 会原样读回来，列表里仍然是一堆内置供应商。这里用 [Settings.providersCleared]
+ * 打一次性标记，执行过后用户自己添加的供应商不会再被清掉。
+ */
+internal fun Settings.clearLegacyProviders(): Settings {
+    if (providersCleared) return this
+    return copy(
+        providers = emptyList(),
+        chatModelId = null,
+        fastModelId = null,
+        memoryModelId = null,
+        translateModeId = Uuid.random(),
+        ocrModelId = Uuid.random(),
+        favoriteModels = emptyList(),
+        providersCleared = true,
+    )
+}
 
 // 补齐缺失的内置提供商/助手/TTS，内置提供商的描述信息始终以代码里的为准
 internal fun Settings.withBuiltInDefaults(): Settings {
-    var providers = this.providers.ifEmpty { DEFAULT_PROVIDERS }.toMutableList()
-    DEFAULT_PROVIDERS.forEach { defaultProvider ->
-        if (providers.none { it.id == defaultProvider.id }) {
-            providers.add(defaultProvider.copyProvider())
-        }
-    }
-    providers = providers.map { provider ->
-        val defaultProvider = DEFAULT_PROVIDERS.find { it.id == provider.id }
-        if (defaultProvider != null) {
-            provider.copyProvider(
-                builtIn = defaultProvider.builtIn,
-                description = defaultProvider.description,
-                shortDescription = defaultProvider.shortDescription,
-            )
-        } else provider
-    }.toMutableList()
+    // 二改版：不内置供应商预设，也不自动补回，providers 完全由用户配置决定
+    val providers = this.providers.toMutableList()
     val assistants = this.assistants.ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
     DEFAULT_ASSISTANTS.forEach { defaultAssistant ->
         if (assistants.none { it.id == defaultAssistant.id }) {

@@ -60,6 +60,13 @@ private fun uuid(
     set: Settings.(Uuid) -> Settings,
 ) = SettingsField(key, property, set, encode = { it.toString() }, decode = { Uuid.parse(it) })
 
+/** 可空的 uuid：null 表示「跟随当前调用的模型」，写入时删除该 key。 */
+private fun nullableUuid(
+    key: Preferences.Key<String>,
+    property: KProperty1<Settings, Uuid?>,
+    set: Settings.(Uuid?) -> Settings,
+) = SettingsField(key, property, set, encode = { it?.toString() }, decode = { Uuid.parse(it) })
+
 /** 存枚举名，认不出的值按 AUTO 处理。 */
 private fun reasoningLevel(
     key: Preferences.Key<String>,
@@ -85,8 +92,8 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
 
         // 模型选择
         json(FAVORITE_MODELS, Settings::favoriteModels) { copy(favoriteModels = it) },
-        uuid(SELECT_MODEL, Settings::chatModelId) { copy(chatModelId = it) },
-        uuid(FAST_MODEL, Settings::fastModelId) { copy(fastModelId = it) },
+        nullableUuid(SELECT_MODEL, Settings::chatModelId) { copy(chatModelId = it) },
+        nullableUuid(FAST_MODEL, Settings::fastModelId) { copy(fastModelId = it) },
         reasoningLevel(FAST_MODEL_REASONING_LEVEL, Settings::fastModelReasoningLevel) {
             copy(fastModelReasoningLevel = it)
         },
@@ -115,6 +122,7 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
 
         // 提供商
         json(PROVIDERS, Settings::providers) { copy(providers = it) },
+        plain(PROVIDERS_CLEARED, Settings::providersCleared) { copy(providersCleared = it) },
 
         // 助手
         uuid(SELECT_ASSISTANT, Settings::assistantId) { copy(assistantId = it) },
@@ -181,8 +189,8 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
  * 和 [Settings] 构造函数的默认值只有一处不同，沿用的是一直以来的读取行为：没选过的模型指向内置的自动模型。
  */
 private val MISSING_KEY_DEFAULTS = Settings(
-    chatModelId = DEFAULT_AUTO_MODEL_ID,
-    fastModelId = DEFAULT_AUTO_MODEL_ID,
+    chatModelId = null, // 跟随当前调用的模型
+    fastModelId = null, // 跟随当前调用的模型
     translateModeId = DEFAULT_AUTO_MODEL_ID,
 )
 

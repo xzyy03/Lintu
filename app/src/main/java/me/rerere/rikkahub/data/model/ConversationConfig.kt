@@ -110,7 +110,8 @@ fun Settings.getAssistantOf(conversation: Conversation): Assistant {
 
 /** 会话使用的聊天模型；会话开始后内置搜索以会话上固定的开关为准。 */
 fun Settings.getChatModelOf(conversation: Conversation): Model? {
-    val assistantModel = findModelById(getStoredAssistantOf(conversation).chatModelId ?: chatModelId)
+    val assistantModelId = getStoredAssistantOf(conversation).chatModelId ?: chatModelId
+    val assistantModel = assistantModelId?.let { findModelById(it) }
     val config = conversation.config ?: return assistantModel
     // 固定的模型被删除后退回助手当前的模型，内置搜索也跟随该模型自身的开关
     val model = findModelById(config.chatModelId) ?: return assistantModel

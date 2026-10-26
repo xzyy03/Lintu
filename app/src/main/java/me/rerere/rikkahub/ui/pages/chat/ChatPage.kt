@@ -62,6 +62,7 @@ import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
@@ -398,6 +399,12 @@ private fun ChatPageContent(
                     onUpdateAssistant = vm::updateAssistant,
                     onMoreClick = {
                         showFilesSheet = true
+                    },
+                    onOpenProviders = {
+                        navController.navigate(Screen.SettingProvider)
+                    },
+                    onOpenMcp = {
+                        navController.navigate(Screen.SettingMcp)
                     },
                 )
             },

@@ -167,6 +167,11 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                     state = chatModel,
                     iconContainerColor = containerColor,
                     iconContentColor = contentColor,
+                    // 不设时跟随当前调用的模型，所以要能清掉
+                    placeholder = R.string.setting_model_page_follow_current,
+                    onClear = settings.chatModelId?.let {
+                        { vm.updateSettings { latest -> latest.copy(chatModelId = null) } }
+                    },
                 )
             }
         }
@@ -182,6 +187,11 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                     state = fastModel,
                     iconContainerColor = containerColor,
                     iconContentColor = contentColor,
+                    // 不设时跟随当前调用的模型
+                    placeholder = R.string.setting_model_page_follow_current,
+                    onClear = settings.fastModelId?.let {
+                        { vm.updateSettings { latest -> latest.copy(fastModelId = null) } }
+                    },
                 )
                 item(
                     headlineContent = { Text(stringResource(R.string.assistant_page_thinking_budget)) },

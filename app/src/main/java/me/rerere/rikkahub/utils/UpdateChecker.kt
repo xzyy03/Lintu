@@ -5,14 +5,11 @@ import android.content.Context
 import android.os.Environment
 import android.widget.Toast
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
@@ -35,41 +32,48 @@ class UpdateChecker(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    val updateState: StateFlow<UiState<UpdateInfo>> = checkUpdate().stateIn(
-        scope = appScope,
-        started = SharingStarted.Lazily,
-        initialValue = UiState.Loading,
-    )
+    private val state = MutableStateFlow<UiState<UpdateInfo>>(UiState.Idle)
 
-    private fun checkUpdate(): Flow<UiState<UpdateInfo>> = flow {
-        emit(UiState.Loading)
-        emit(
-            UiState.Success(
-                data = try {
-                    val response = client.newCall(
-                        Request.Builder()
-                            .url(API_URL)
-                            .get()
-                            .addHeader(
-                                "User-Agent",
-                                "Lintu ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}"
-                            )
-                            .addHeader("Accept", "application/vnd.github+json")
-                            .build()
-                    ).await()
-                    if (response.isSuccessful) {
-                        parseGithubRelease(response.body.string())
-                    } else {
-                        throw Exception("Failed to fetch update info")
-                    }
-                } catch (e: Exception) {
-                    throw Exception("Failed to fetch update info", e)
-                }
-            )
-        )
-    }.catch {
-        emit(UiState.Error(it))
-    }.flowOn(Dispatchers.IO)
+    /** 最近一次检查结果；首次由 [refresh] 触发 */
+    val updateState: StateFlow<UiState<UpdateInfo>> = state.asStateFlow()
+
+    private val scope = appScope
+
+    private var job: Job? = null
+
+    /**
+     * 主动检查更新。关于页点「版本更新」时调用，会重新请求一次并把结果写进 [updateState]。
+     * 已有请求在跑时复用同一个 Job，避免并发重复请求。
+     */
+    fun refresh() {
+        if (job?.isActive == true) return
+        job = scope.launch {
+            state.value = UiState.Loading
+            state.value = try {
+                UiState.Success(fetch())
+            } catch (e: Exception) {
+                UiState.Error(e)
+            }
+        }
+    }
+
+    private suspend fun fetch(): UpdateInfo {
+        val response = client.newCall(
+            Request.Builder()
+                .url(API_URL)
+                .get()
+                .addHeader(
+                    "User-Agent",
+                    "Lintu ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}"
+                )
+                .addHeader("Accept", "application/vnd.github+json")
+                .build()
+        ).await()
+        if (!response.isSuccessful) {
+            throw Exception("Failed to fetch update info")
+        }
+        return parseGithubRelease(response.body.string())
+    }
 
     /**
      * 把 GitHub Releases API 的 latest 响应映射成应用内使用的 [UpdateInfo]。

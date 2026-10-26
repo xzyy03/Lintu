@@ -8,6 +8,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findModelById
+import me.rerere.rikkahub.data.datastore.getFastModel
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.utils.applyPlaceholders
@@ -21,7 +22,7 @@ class ConversationMetaGenerator(
 ) {
     /** 快速模型或它的提供商找不到时抛出异常，提示用户检查设置 */
     suspend fun generateTitle(settings: Settings, conversation: Conversation): String {
-        val model = settings.findModelById(settings.fastModelId)
+        val model = settings.getFastModel()
             ?: throw IllegalStateException(context.getString(R.string.error_fast_model_not_found))
         val provider = model.findProvider(settings.providers)
             ?: throw IllegalStateException(context.getString(R.string.error_fast_model_provider_not_found))
@@ -39,7 +40,7 @@ class ConversationMetaGenerator(
 
     /** 没有配置快速模型时返回 null */
     suspend fun generateSuggestions(settings: Settings, conversation: Conversation): List<String>? {
-        val model = settings.findModelById(settings.fastModelId) ?: return null
+        val model = settings.getFastModel() ?: return null
         val provider = model.findProvider(settings.providers) ?: return null
         return generate(
             settings,

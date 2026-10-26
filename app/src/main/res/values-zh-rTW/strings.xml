@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <resources>
+  <string name="about_page_checking_update">正在檢查更新…</string>
+  <string name="about_page_already_latest">已是最新版本（%s）</string>
   <string name="about_page_upstream_repo">上游倉庫</string>
   <string name="about_page_project_repo">本專案倉庫</string>
   <string name="about_page_qq_group">交流群</string>
@@ -728,6 +730,7 @@
   <string name="setting_mcp_page_transport_type">傳輸類型</string>
   <string name="setting_mcp_page_transport_type_desc">選擇MCP伺服器的傳輸協定類型</string>
   <string name="setting_mcp_page_url_label">URL</string>
+  <string name="setting_model_page_follow_current">跟隨目前模型</string>
   <string name="setting_model_page_chat_model">聊天模型</string>
   <string name="setting_model_page_chat_model_desc">全域預設聊天模型</string>
   <string name="setting_model_page_ocr_model">OCR 模型</string>
