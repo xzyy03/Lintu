@@ -5,17 +5,24 @@ import android.content.Context
 import android.os.Environment
 import android.widget.Toast
 import androidx.core.net.toUri
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.contentOrNull
 import me.rerere.common.http.await
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.BuildConfig
@@ -32,17 +39,15 @@ class UpdateChecker(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val scope = appScope
     private val state = MutableStateFlow<UiState<UpdateInfo>>(UiState.Idle)
+    private var job: Job? = null
 
     /** 最近一次检查结果；首次由 [refresh] 触发 */
     val updateState: StateFlow<UiState<UpdateInfo>> = state.asStateFlow()
 
-    private val scope = appScope
-
-    private var job: Job? = null
-
     /**
-     * 主动检查更新。关于页点「版本更新」时调用，会重新请求一次并把结果写进 [updateState]。
+     * 主动检查更新。关于页点「版本更新」时调用。
      * 已有请求在跑时复用同一个 Job，避免并发重复请求。
      */
     fun refresh() {
@@ -50,7 +55,8 @@ class UpdateChecker(
         job = scope.launch {
             state.value = UiState.Loading
             state.value = try {
-                UiState.Success(fetch())
+                state.value = UiState.Success(fetch())
+                state.value
             } catch (e: Exception) {
                 UiState.Error(e)
             }
@@ -62,22 +68,17 @@ class UpdateChecker(
             Request.Builder()
                 .url(API_URL)
                 .get()
-                .addHeader(
-                    "User-Agent",
-                    "Lintu ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}"
-                )
+                .addHeader("User-Agent", "Lintu ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}")
                 .addHeader("Accept", "application/vnd.github+json")
                 .build()
         ).await()
-        if (!response.isSuccessful) {
-            throw Exception("Failed to fetch update info")
-        }
+        if (!response.isSuccessful) throw Exception("Failed to fetch update info")
         return parseGithubRelease(response.body.string())
     }
 
     /**
      * 把 GitHub Releases API 的 latest 响应映射成应用内使用的 [UpdateInfo]。
-     * tag 形如 v3.1.1-lintu，去掉前缀 v 后作为版本号；asset 直接取 apk。
+     * tag 形如 v3.1.2-lintu，去掉前缀 v 后作为版本号；asset 只取 apk。
      */
     private fun parseGithubRelease(body: String): UpdateInfo {
         val root = json.parseToJsonElement(body).jsonObject

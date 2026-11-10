@@ -307,7 +307,7 @@ fun ChatDrawerContent(
                 )
             }
 
-            // 多选操作栏：进入多选后替换掉常规快捷操作
+            // 多选操作栏：进入多选后出现
             AnimatedVisibility(
                 visible = selectionMode,
                 enter = fadeIn() + expandVertically(),
@@ -376,6 +376,7 @@ fun ChatDrawerContent(
             }
         }
     }
+
 
     // 批量删除确认
     if (showBatchDeleteConfirm) {
@@ -472,16 +473,11 @@ fun ChatDrawerContent(
                     if (!selectedIds.remove(conversation.id)) {
                         selectedIds.add(conversation.id)
                     }
-                    // 全部取消勾选时自动退出多选
                     if (selectedIds.isEmpty()) selectionMode = false
                 },
                 onLongPressEnterSelection = { conversation ->
                     selectionMode = true
                     if (conversation.id !in selectedIds) selectedIds.add(conversation.id)
-                },
-                onExitSelection = {
-                    selectionMode = false
-                    selectedIds.clear()
                 },
             )
 

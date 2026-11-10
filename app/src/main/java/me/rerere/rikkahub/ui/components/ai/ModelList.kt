@@ -70,6 +70,7 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.provider.filterByKeywords
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowRight01
@@ -243,9 +244,9 @@ internal fun ModelSelectorButton(
             }
         }
     } else {
+        // 复刻 IconButton 的 48dp 触摸槽与 36dp 图标；不用 IconButton 是因为
+        // 它内部的 clickable 会吞掉长按，这里直接上 combinedClickable
         val interactionSource = remember { MutableInteractionSource() }
-        // 复刻原版 IconButton 的 48dp 触摸槽与 36dp 图标；
-        // 不用 IconButton 是因为它内部的 clickable 会吞掉长按，这里直接上 combinedClickable
         Box(
             contentAlignment = Alignment.Center,
             modifier = modifier
@@ -422,12 +423,8 @@ private fun ColumnScope.ModelList(
         }
     }
 
-    val searchFilteredModelsByProvider = remember(providers, modelType, searchKeywords) {
-        providers.associate { provider ->
-            provider.id to provider.models.fastFilter {
-                it.type == modelType && it.displayName.contains(searchKeywords, true)
-            }
-        }
+    val searchFilteredModelsByProvider = remember(typeFilteredModelsByProvider, searchKeywords) {
+        typeFilteredModelsByProvider.mapValues { (_, models) -> models.filterByKeywords(searchKeywords) }
     }
 
     val visibleModelsByProvider = remember(providers, searchFilteredModelsByProvider, collapsedProviders, searchKeywords) {
@@ -693,12 +690,12 @@ private fun ColumnScope.ModelList(
                         IconButton(
                             onClick = {
                                 coroutineScope.launch {
+                                    // 按最新设置判断是否已收藏，连点时界面上的 favorite 还没刷新，会重复追加
                                     settingsStore.update { settings ->
-                                        if (favorite) {
+                                        if (model.id in settings.favoriteModels) {
                                             settings.copy(
                                                 favoriteModels = settings.favoriteModels.filter { it != model.id }
                                             )
-
                                         } else {
                                             settings.copy(
                                                 favoriteModels = settings.favoriteModels + model.id

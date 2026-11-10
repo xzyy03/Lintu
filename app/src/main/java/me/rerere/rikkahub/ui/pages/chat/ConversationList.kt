@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,12 +91,11 @@ fun ColumnScope.ConversationList(
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
     onMoveToFolder: (Conversation) -> Unit = {},
-    // 多选模式：非 null 时表示正在多选，回调负责增删选中项
+    // 多选模式：selectedIds 非空或 selectionMode 为 true 时生效
     selectionMode: Boolean = false,
     selectedIds: Set<Uuid> = emptySet(),
     onToggleSelect: (Conversation) -> Unit = {},
     onLongPressEnterSelection: (Conversation) -> Unit = {},
-    onExitSelection: () -> Unit = {},
 ) {
     var hasScrolledToCurrent by remember(current.id) { mutableStateOf(false) }
     // 列表顶部若放了 header，会话项在 LazyColumn 中的位置要往后挪一位
@@ -265,17 +265,19 @@ private fun ConversationItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusManager = LocalFocusManager.current
-    val backgroundColor = when {
-        checked -> MaterialTheme.colorScheme.primaryContainer
-        selected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-        else -> Color.Transparent
+    val backgroundColor = if (checked) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else if (selected) {
+        MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
+    } else {
+        Color.Transparent
     }
     var showDropdownMenu by remember {
         mutableStateOf(false)
     }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(50f))
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
@@ -311,11 +313,7 @@ private fun ConversationItem(
                         )
                         .then(
                             if (checked) Modifier
-                            else Modifier.border(
-                                width = 1.5.dp,
-                                color = MaterialTheme.colorScheme.outline,
-                                shape = CircleShape,
-                            )
+                            else Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
                         ),
                     contentAlignment = Alignment.Center,
                 ) {

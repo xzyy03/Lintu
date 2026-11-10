@@ -120,6 +120,10 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
         uuid(OCR_MODEL, Settings::ocrModelId) { copy(ocrModelId = it) },
         plain(OCR_PROMPT, Settings::ocrPrompt) { copy(ocrPrompt = it) },
 
+        // 自动压缩
+        plain(ENABLE_AUTO_COMPRESS, Settings::enableAutoCompress) { copy(enableAutoCompress = it) },
+        plain(AUTO_COMPRESS_THRESHOLD, Settings::autoCompressThreshold) { copy(autoCompressThreshold = it) },
+
         // 提供商
         json(PROVIDERS, Settings::providers) { copy(providers = it) },
         plain(PROVIDERS_CLEARED, Settings::providersCleared) { copy(providersCleared = it) },
@@ -189,8 +193,8 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
  * 和 [Settings] 构造函数的默认值只有一处不同，沿用的是一直以来的读取行为：没选过的模型指向内置的自动模型。
  */
 private val MISSING_KEY_DEFAULTS = Settings(
-    chatModelId = null, // 跟随当前调用的模型
-    fastModelId = null, // 跟随当前调用的模型
+    chatModelId = DEFAULT_AUTO_MODEL_ID,
+    fastModelId = DEFAULT_AUTO_MODEL_ID,
     translateModeId = DEFAULT_AUTO_MODEL_ID,
 )
 

@@ -1,0 +1,9 @@
+me.rerere.highlight-pngs-0 /root/workspace/rikkahub-master/highlight/build/generated/res/pngs/release
+me.rerere.highlight-updated_navigation_xml-1 /root/workspace/rikkahub-master/highlight/build/generated/updated_navigation_xml/release
+me.rerere.highlight-mergeReleaseResources-2 /root/workspace/rikkahub-master/highlight/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+me.rerere.highlight-mergeReleaseResources-3 /root/workspace/rikkahub-master/highlight/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+me.rerere.highlight-release-4 /root/workspace/rikkahub-master/highlight/build/intermediates/merged_res/release/mergeReleaseResources
+me.rerere.highlight-release-5 /root/workspace/rikkahub-master/highlight/build/intermediates/packaged_res/release/packageReleaseResources
+me.rerere.highlight-main-6 /root/workspace/rikkahub-master/highlight/src/main/res
+me.rerere.highlight-release-7 /root/workspace/rikkahub-master/highlight/src/release/res
+gradleHome-0 /root/.gradle

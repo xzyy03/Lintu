@@ -337,8 +337,7 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
-                        // 只做水平位移 + 轻微淡入淡出：去掉原来的 scale 0.7，避免缩放带来的
-                        // 重绘与「画面突然缩小」的不适感，同时统一时长让进出更跟手。
+                        // 只做水平位移 + 轻微淡入淡出：去掉 scale 缩放，避免画面突然缩小，也更跟手
                         transitionSpec = {
                             if (backStack.size == 1) {
                                 fadeIn(tween(220)) togetherWith fadeOut(tween(180))

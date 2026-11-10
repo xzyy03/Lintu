@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -41,6 +40,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
@@ -95,6 +96,7 @@ import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.McpServer
 import me.rerere.hugeicons.stroke.ArrowUp02
 import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.ComputerTerminal01
 import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
@@ -103,7 +105,7 @@ import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.QuickMessage
-import me.rerere.rikkahub.service.MessageQueueState
+import me.rerere.rikkahub.service.InboxState
 import me.rerere.rikkahub.service.QueuedMessage
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
@@ -142,11 +144,13 @@ fun ChatInput(
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
     onLongSendClick: () -> Unit,
-    messageQueue: MessageQueueState = MessageQueueState(),
+    messageQueue: InboxState = InboxState(),
     onRemoveQueuedMessage: (Uuid) -> Unit = {},
     onBeginEditQueuedMessage: (Uuid) -> QueuedMessage? = { null },
     onFinishEditQueuedMessage: (Uuid, List<UIMessagePart>?) -> Unit = { _, _ -> },
     onResumeMessageQueue: () -> Unit = {},
+    runningBackgroundTasks: Int = 0,
+    onShowBackgroundTasks: () -> Unit = {},
     onStartVoiceMode: (() -> Unit)? = null,
     voiceState: VoiceSessionState = VoiceSessionState(),
     onStopVoiceMode: () -> Unit = {},
@@ -286,60 +290,73 @@ fun ChatInput(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 2.dp),
+                            .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
-                            // Model Picker：短按选模型，长按进供应商配置
-                            ModelSelectorButton(
-                                state = modelListState,
-                                onlyIcon = true,
-                                modifier = Modifier,
-                                onLongClick = onOpenProviders,
-                            )
-
-                            // Reasoning
-                            if (chatModel?.abilities?.contains(ModelAbility.REASONING) == true) {
-                                ReasoningButton(
-                                    reasoningLevel = assistant.reasoningLevel,
-                                    onUpdateReasoningLevel = {
-                                        onUpdateAssistant(assistant.copy(reasoningLevel = it))
-                                    },
-                                    onlyIcon = true,
-                                )
-                            }
-
-                            // MCP 服务器：与思维按钮同尺寸（24dp 图标 + 8dp 内边距），用主色与其它图标一致
-                            Surface(
-                                onClick = onOpenMcp,
-                                shape = CircleShape,
-                                tonalElevation = 0.dp,
-                                color = Color.Transparent,
-                                contentColor = MaterialTheme.colorScheme.primary,
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                                // Model Picker
+                                // 短按选模型，长按进 AI 供应商配置
+                                ModelSelectorButton(
+                                    state = modelListState,
+                                    onlyIcon = true,
+                                    modifier = Modifier,
+                                    onLongClick = onOpenProviders,
+                                )
+
+                                // Reasoning
+                                if (chatModel?.abilities?.contains(ModelAbility.REASONING) == true) {
+                                    ReasoningButton(
+                                        reasoningLevel = assistant.reasoningLevel,
+                                        onUpdateReasoningLevel = {
+                                            onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                                        },
+                                        onlyIcon = true,
+                                    )
+                                }
+
+                                // MCP 服务器：与思维按钮同尺寸，用主色
+                                Surface(
+                                    onClick = onOpenMcp,
+                                    shape = CircleShape,
+                                    tonalElevation = 0.dp,
+                                    color = Color.Transparent,
                                 ) {
-                                    Box(
-                                        modifier = Modifier.size(24.dp),
-                                        contentAlignment = Alignment.Center,
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
-                                        Icon(
-                                            imageVector = HugeIcons.McpServer,
-                                            contentDescription = stringResource(R.string.setting_page_mcp),
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
+                                        Box(
+                                            modifier = Modifier.size(24.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Icon(
+                                                imageVector = HugeIcons.McpServer,
+                                                contentDescription = stringResource(R.string.setting_page_mcp),
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
                                     }
                                 }
                             }
 
+                            if (runningBackgroundTasks > 0) {
+                                BackgroundTasksButton(
+                                    running = runningBackgroundTasks,
+                                    onClick = onShowBackgroundTasks,
+                                )
+                            }
                         }
 
                         ActionIconButton(
@@ -427,7 +444,7 @@ private fun SendButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(34.dp)
+            .size(30.dp)
             .testTag("chat_send_button")
             .clip(CircleShape)
             .combinedClickable(
@@ -446,8 +463,31 @@ private fun SendButton(
             imageVector = if (showStop) HugeIcons.Cancel01 else HugeIcons.ArrowUp02,
             contentDescription = stringResource(if (showStop) R.string.stop else R.string.send),
             tint = contentColor,
-            modifier = Modifier.size(17.dp)
+            modifier = Modifier.size(18.dp)
         )
+    }
+}
+
+@Composable
+private fun BackgroundTasksButton(
+    running: Int,
+    onClick: () -> Unit,
+) {
+    BadgedBox(
+        modifier = Modifier.padding(horizontal = 5.dp),
+        badge = {
+            Badge(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) { Text(running.toString()) }
+        },
+    ) {
+        ActionIconButton(onClick = onClick) {
+            Icon(
+                imageVector = HugeIcons.ComputerTerminal01,
+                contentDescription = stringResource(R.string.background_tasks_running, running),
+            )
+        }
     }
 }
 
@@ -458,7 +498,7 @@ private fun ActionIconButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(32.dp),
+        modifier = Modifier.size(30.dp),
         shape = CircleShape,
         tonalElevation = 0.dp,
         color = Color.Transparent,
@@ -485,7 +525,6 @@ private fun TextInputRow(
     }
 
     var isEditingReasoning by remember { mutableStateOf(false) }
-
     val inputTextStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp)
 
     Column(
@@ -608,7 +647,7 @@ private fun TextInputRow(
             )
         }
 
-        // miuix 迷你输入区：文本区随内容自适应（单行约 22sp 行高 + 6dp 内边距），多行时最高 5 行。
+        // miuix 迷你输入区：文本自适应高度（不设 min，否则聚焦变高），最多 5 行
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top,
@@ -650,7 +689,7 @@ private fun TextInputRow(
                 )
             }
 
-            // 展开按钮只在聚焦时出现，且与文本同处一行，不额外撑高输入卡
+            // 展开按钮只在聚焦时出现，且与文本同一行，不额外撑高输入卡
             if (isFocused) {
                 IconButton(
                     onClick = { isFullScreen = !isFullScreen },
@@ -773,6 +812,7 @@ private fun QuickMessageButton(
     state: ChatInputState,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val hapticFeedback = LocalHapticFeedback.current
     IconButton(
         onClick = {
             expanded = !expanded
@@ -785,13 +825,22 @@ private fun QuickMessageButton(
                 .widthIn(min = 200.dp, max = 360.dp)
         ) {
             quickMessages.forEach { quickMessage ->
+                // 短按追加到输入框末尾，长按替换输入框内容
                 Surface(
-                    onClick = {
-                        state.appendText(quickMessage.content)
-                        expanded = false
-                    },
                     color = Color.Transparent,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .combinedClickable(
+                            onClick = {
+                                state.appendText(quickMessage.content)
+                                expanded = false
+                            },
+                            onLongClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                state.setMessageText(quickMessage.content)
+                                expanded = false
+                            },
+                        ),
                 ) {
                     Column(
                         modifier = Modifier.padding(8.dp)

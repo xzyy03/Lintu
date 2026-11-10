@@ -1,10 +1,11 @@
 package me.rerere.rikkahub.ui.pages.setting.components
 
-import me.rerere.ai.util.activeKeyValues
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.Screen
 import me.rerere.ai.util.toApiKeyString
+import me.rerere.ai.util.splitApiKeys
 import me.rerere.ai.util.parseMultiKeyConfig
+import me.rerere.ai.util.activeKeyValues
 import me.rerere.ai.util.MultiKeyConfig
 import me.rerere.ai.util.ManagedKey
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import me.rerere.ui.toast.ToastType
 import me.rerere.ai.provider.ClaudePromptCacheTtl
 import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.util.splitApiKeys
 import me.rerere.ai.provider.ProviderQuota
 import me.rerere.ai.provider.UsageWindow
 import me.rerere.ai.provider.supportsQuota
@@ -301,11 +301,38 @@ private fun CardGroupScope.nameItem(
     onValueChange = { onEdit(provider.copyProvider(name = it)) },
 )
 
+private fun CardGroupScope.apiKeyItem(
+    apiKey: String,
+    onValueChange: (String) -> Unit,
+) = textFieldItem(
+    label = R.string.setting_provider_page_api_key,
+    value = apiKey,
+    // 不 trim：多 Key 用换行分隔，trim 会把换行吃掉
+    onValueChange = { onValueChange(it) },
+    secret = true,
+    minLines = 1,
+    maxLines = 6,
+    supportingText = {
+        val count = remember(apiKey) { splitApiKeys(apiKey).size }
+        Text(
+            text = if (count > 1) {
+                stringResource(R.string.setting_provider_page_multi_key_count, count)
+            } else {
+                stringResource(R.string.setting_provider_page_multi_key_hint)
+            },
+            color = if (count > 1) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
+    },
+)
+
 /**
  * 多 Key 模式开关 + 管理入口。
  *
- * CardGroupScope 的 DSL 不是 @Composable，所以这里不能 remember / 读 CompositionLocal，
- * 由调用方把解析好的 [config]、导航回调与文案算好传进来。
+ * CardGroup 的 DSL 不是 @Composable，所以文案与状态由调用方算好传入。
  */
 private fun CardGroupScope.multiKeyItem(
     apiKey: String,
@@ -323,14 +350,12 @@ private fun CardGroupScope.multiKeyItem(
         checked = enabled,
         onCheckedChange = { on ->
             if (on) {
-                // 从单 Key 切换到多 Key：把现有单 Key 变成列表第一项
                 val existing = splitApiKeys(apiKey)
                 onValueChange(
                     MultiKeyConfig(enabled = true, keys = existing.map { ManagedKey(it) })
                         .toApiKeyString()
                 )
             } else {
-                // 关掉多 Key：把启用中的 Key 合并成普通字符串
                 onValueChange(config?.activeKeyValues()?.joinToString("\n").orEmpty())
             }
         },
@@ -346,34 +371,6 @@ private fun CardGroupScope.multiKeyItem(
     }
 }
 
-private fun CardGroupScope.apiKeyItem(
-    apiKey: String,
-    onValueChange: (String) -> Unit,
-) = textFieldItem(
-    label = R.string.setting_provider_page_api_key,
-    value = apiKey,
-    onValueChange = { onValueChange(it) },
-    secret = true,
-    minLines = 1,
-    maxLines = 6,
-    supportingText = {
-        // 上游 KeyRoulette 支持用空格/换行/逗号分隔多个 Key 自动轮询，这里把它显式暴露出来
-        val count = remember(apiKey) { splitApiKeys(apiKey).size }
-        Text(
-            text = if (count > 1) {
-                stringResource(R.string.setting_provider_page_multi_key_count, count)
-            } else {
-                stringResource(R.string.setting_provider_page_multi_key_hint)
-            },
-            color = if (count > 1) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        )
-    },
-)
-
 @Composable
 private fun ProviderConfigureOpenAI(
     provider: ProviderSetting.OpenAI,
@@ -381,17 +378,15 @@ private fun ProviderConfigureOpenAI(
 ) {
     val navController = LocalNavController.current
     val multiKeyConfig = remember(provider.apiKey) { provider.apiKey.parseMultiKeyConfig() }
-    val toaster = LocalToaster.current
-    val responseAPIWarning = stringResource(R.string.setting_provider_page_response_api_warning)
-    // CardGroup 的 DSL 不是 @Composable，文案先在外面取好
     val mkEnable = stringResource(R.string.multi_key_enable)
     val mkDesc = stringResource(R.string.multi_key_enable_desc)
     val mkTitle = stringResource(R.string.multi_key_title)
     val mkTotal = stringResource(R.string.multi_key_total)
+    val toaster = LocalToaster.current
+    val responseAPIWarning = stringResource(R.string.setting_provider_page_response_api_warning)
 
     CardGroup {
         nameItem(provider, onEdit)
-        // 多 Key 模式下 apiKey 里存的是配置 JSON，不展示原始输入框；关闭后自动恢复
         if (multiKeyConfig?.enabled != true) {
             apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
         }
@@ -608,7 +603,6 @@ private fun ProviderConfigureClaude(
     val mkTotal = stringResource(R.string.multi_key_total)
     CardGroup {
         nameItem(provider, onEdit)
-        // 多 Key 模式下 apiKey 里存的是配置 JSON，不展示原始输入框；关闭后自动恢复
         if (multiKeyConfig?.enabled != true) {
             apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
         }
@@ -701,20 +695,19 @@ private fun ProviderConfigureGoogle(
     CardGroup {
         nameItem(provider, onEdit)
         if (!useServiceAccount) {
-            // 多 Key 模式下 apiKey 里存的是配置 JSON，不展示原始输入框；关闭后自动恢复
             if (multiKeyConfig?.enabled != true) {
-                apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
-            }
-            multiKeyItem(
-                apiKey = provider.apiKey,
-                config = multiKeyConfig,
-                onOpenManage = { navController.navigate(Screen.MultiKeyManage(provider.id.toString())) },
-                titleText = mkEnable,
-                descText = mkDesc,
-                manageText = mkTitle,
-                totalText = mkTotal,
-                onValueChange = { onEdit(provider.copy(apiKey = it)) },
-            )
+            apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
+        }
+        multiKeyItem(
+            apiKey = provider.apiKey,
+            config = multiKeyConfig,
+            onOpenManage = { navController.navigate(Screen.MultiKeyManage(provider.id.toString())) },
+            titleText = mkEnable,
+            descText = mkDesc,
+            manageText = mkTitle,
+            totalText = mkTotal,
+            onValueChange = { onEdit(provider.copy(apiKey = it)) },
+        )
         }
         if (!provider.vertexAI) {
             textFieldItem(

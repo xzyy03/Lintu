@@ -1,7 +1,5 @@
 package me.rerere.rikkahub.data.datastore
 
-import kotlin.uuid.Uuid
-
 /** 读盘后和每次修改后都要过一遍，保证内存里的设置始终是规整的。 */
 internal fun Settings.normalized(): Settings =
     clearLegacyProviders().withBuiltInDefaults().withoutInvalidReferences().withValuesInRange()
@@ -10,8 +8,8 @@ internal fun Settings.normalized(): Settings =
  * 二改版一次性迁移：清空所有已落盘的供应商。
  *
  * 只把 DEFAULT_PROVIDERS 置空不够 —— 设备上早先版本写进 DataStore 的 providers
- * 会原样读回来，列表里仍然是一堆内置供应商。这里用 [Settings.providersCleared]
- * 打一次性标记，执行过后用户自己添加的供应商不会再被清掉。
+ * 会原样读回来。这里用 [Settings.providersCleared] 打一次性标记，
+ * 执行过后用户自己添加的供应商不会再被清掉。
  */
 internal fun Settings.clearLegacyProviders(): Settings {
     if (providersCleared) return this
@@ -20,16 +18,16 @@ internal fun Settings.clearLegacyProviders(): Settings {
         chatModelId = null,
         fastModelId = null,
         memoryModelId = null,
-        translateModeId = Uuid.random(),
-        ocrModelId = Uuid.random(),
+        translateModeId = kotlin.uuid.Uuid.random(),
+        ocrModelId = kotlin.uuid.Uuid.random(),
         favoriteModels = emptyList(),
         providersCleared = true,
     )
 }
 
-// 补齐缺失的内置提供商/助手/TTS，内置提供商的描述信息始终以代码里的为准
+// 补齐缺失的内置提供商/助手/TTS，内置提供商和推荐提供商的描述信息始终以代码里的为准
 internal fun Settings.withBuiltInDefaults(): Settings {
-    // 二改版：不内置供应商预设，也不自动补回，providers 完全由用户配置决定
+    // 二改版：不内置供应商预设，也不自动补回
     val providers = this.providers.toMutableList()
     val assistants = this.assistants.ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
     DEFAULT_ASSISTANTS.forEach { defaultAssistant ->
@@ -88,7 +86,7 @@ internal fun Settings.withoutInvalidReferences(): Settings {
         selectedASRProviderId = settings.selectedASRProviderId
             ?.takeIf { id -> asrProviders.any { provider -> provider.id == id } }
             ?: asrProviders.firstOrNull()?.id,
-        favoriteModels = settings.favoriteModels.filter { it in validModelIds },
+        favoriteModels = settings.favoriteModels.filter { it in validModelIds }.distinct(),
         modeInjections = settings.modeInjections.distinctBy { it.id },
         lorebooks = settings.lorebooks.distinctBy { it.id },
         quickMessages = settings.quickMessages.distinctBy { it.id },
@@ -99,4 +97,8 @@ internal fun Settings.withoutInvalidReferences(): Settings {
 private fun Settings.withValuesInRange(): Settings = copy(
     searchServiceSelected = searchServiceSelected.coerceIn(0, (searchServices.size - 1).coerceAtLeast(0)),
     defaultTTSPlaybackSpeed = defaultTTSPlaybackSpeed.coerceIn(0.5f, 2.0f),
+    autoCompressThreshold = autoCompressThreshold.coerceIn(AUTO_COMPRESS_THRESHOLD_RANGE),
 )
+
+/** 自动压缩触发比例的可选范围，设置页的滑块也用它 */
+val AUTO_COMPRESS_THRESHOLD_RANGE = 0.5f..0.95f

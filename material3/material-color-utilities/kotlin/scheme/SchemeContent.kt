@@ -20,7 +20,6 @@ import dynamiccolor.ColorSpecs
 import dynamiccolor.DynamicScheme
 import dynamiccolor.Variant
 import hct.Hct
-import palettes.TonalPalette
 
 /**
  * A scheme that places the source color in Scheme.primaryContainer.
@@ -63,22 +62,14 @@ class SchemeContent(
         platform,
         contrastLevel,
       ),
-    if (
-      sourceColorHctList.size > 1 &&
-        platform == Platform.WATCH &&
-        sourceColorHctList[0].toInt() != sourceColorHctList[1].toInt()
-    ) {
-      TonalPalette.fromHueAndChroma(sourceColorHctList[1].hue, sourceColorHctList[1].chroma)
-    } else {
-      ColorSpecs.get(specVersion)
-        .getTertiaryPalette(
-          Variant.CONTENT,
-          sourceColorHctList.first(),
-          isDark,
-          platform,
-          contrastLevel,
-        )
-    },
+    ColorSpecs.get(specVersion)
+      .getTertiaryPalette(
+        Variant.CONTENT,
+        sourceColorHctList.first(),
+        isDark,
+        platform,
+        contrastLevel,
+      ),
     ColorSpecs.get(specVersion)
       .getNeutralPalette(
         Variant.CONTENT,

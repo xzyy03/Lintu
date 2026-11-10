@@ -298,7 +298,7 @@ private fun Settings.consolidationModel(
     fun toolModel(id: Uuid?) = id?.let { findModelById(it) }?.takeIf { ModelAbility.TOOL in it.abilities }
     val (model, reasoningLevel) = toolModel(memoryModelId)?.let { it to memoryModelReasoningLevel }
         ?: toolModel(fastModelId)?.let { it to fastModelReasoningLevel }
-        ?: (conversation?.let { getChatModelOf(it) } ?: findModelById(assistant.chatModelId ?: chatModelId))
+        ?: (conversation?.let { getChatModelOf(it) } ?: (assistant.chatModelId ?: chatModelId)?.let { findModelById(it) })
             ?.let { it to fastModelReasoningLevel }
         ?: return null
     return model.copy(tools = emptySet()) to reasoningLevel
@@ -323,7 +323,10 @@ internal suspend fun <T> collectPending(
     return found
 }
 
-/** 一轮对话：一条用户消息和它之后直到下一条用户消息之前的回复，消息带着在对话里的位置 */
+/**
+ * 一轮对话：一条用户消息和它之后直到下一条用户消息之前的回复，消息带着在对话里的位置。
+ * 空闲时的运行时通知也存成用户消息，同样单独成一轮。
+ */
 internal class MemoryTurn(val messages: List<IndexedValue<UIMessage>>) {
     val position: Int get() = messages.first().index
     val userMessage: UIMessage get() = messages.first().value
@@ -344,7 +347,8 @@ internal class PendingMemoryTurns(
     val consolidatedThrough: Long?,
 )
 
-// 按用户消息切成轮；压缩检查点是模型写的摘要，不是用户说的话
+// 按用户消息切成轮；压缩检查点是模型写的摘要，不是用户说的话。
+// 通知单独成一轮，没有用户文字所以不会交给整理器；并进上一轮的话，没等到回复的通知会让上一轮一直算没结束
 private fun memoryTurnsOf(messages: List<UIMessage>): List<MemoryTurn> {
     val indexed = messages.withIndex().filterNot { it.value.isContextCheckpoint }
     val starts = indexed.indices.filter { indexed[it].value.role == MessageRole.USER }

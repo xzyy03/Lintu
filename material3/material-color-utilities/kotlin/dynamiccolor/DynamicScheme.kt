@@ -85,7 +85,7 @@ open class DynamicScheme(
 
   init {
     require(sourceColorHctList.isNotEmpty()) { "sourceColorHctList cannot be empty" }
-    this.specVersion = maybeFallbackSpecVersion(specVersion, variant, platform)
+    this.specVersion = maybeFallbackSpecVersion(specVersion, variant)
   }
 
   /** The source color of the scheme in HCT format. */
@@ -287,8 +287,8 @@ open class DynamicScheme(
     get() = getArgb(dynamicColors.onTertiaryFixedVariant)
 
   companion object {
-    val DEFAULT_SPEC_VERSION: SpecVersion = SpecVersion.SPEC_2021
-    val DEFAULT_PLATFORM: Platform = Platform.PHONE
+    val DEFAULT_SPEC_VERSION = SpecVersion.SPEC_2021
+    val DEFAULT_PLATFORM = Platform.PHONE
 
     @JvmStatic
     fun from(other: DynamicScheme, isDark: Boolean): DynamicScheme {
@@ -396,11 +396,7 @@ open class DynamicScheme(
      * Returns the spec version to use for the given variant. If the variant is not supported by the
      * given spec version, the fallback spec version is returned.
      */
-    private fun maybeFallbackSpecVersion(
-      specVersion: SpecVersion,
-      variant: Variant,
-      platform: Platform,
-    ): SpecVersion {
+    private fun maybeFallbackSpecVersion(specVersion: SpecVersion, variant: Variant): SpecVersion {
       if (variant == Variant.CMF) {
         return specVersion
       }
@@ -408,8 +404,7 @@ open class DynamicScheme(
         variant == Variant.EXPRESSIVE ||
           variant == Variant.VIBRANT ||
           variant == Variant.TONAL_SPOT ||
-          variant == Variant.NEUTRAL ||
-          (platform == Platform.WATCH && variant == Variant.CONTENT)
+          variant == Variant.NEUTRAL
       ) {
         return if (specVersion == SpecVersion.SPEC_2026) SpecVersion.SPEC_2025 else specVersion
       }
