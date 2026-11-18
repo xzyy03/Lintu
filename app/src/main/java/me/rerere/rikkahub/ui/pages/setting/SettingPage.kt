@@ -1,5 +1,10 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import me.rerere.rikkahub.ui.components.ui.permission.rememberNotificationPermissionState
+import me.rerere.rikkahub.ui.components.ui.permission.rememberLocalNetworkPermissionState
+import me.rerere.rikkahub.ui.components.ui.permission.NotificationPermissionCard
+import me.rerere.rikkahub.ui.components.ui.permission.LocalNetworkPermissionCard
+import me.rerere.hugeicons.stroke.Rocket01
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
@@ -82,6 +87,8 @@ import org.koin.compose.koinInject
 
 @Composable
 fun SettingPage(vm: SettingVM = koinViewModel()) {
+    val localNetworkPermission = rememberLocalNetworkPermissionState()
+    val notificationPermission = rememberNotificationPermissionState()
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val launchCount by vm.launchCount.collectAsStateWithLifecycle()
@@ -136,9 +143,21 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
             if (settings.isNotConfigured()) {
                 item {
                     ProviderConfigWarningCard(
-                        onClick = { navController.navigate(Screen.SettingProvider) },
+                        onClick = { navController.navigate(Screen.QuickStart) },
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
+                }
+            }
+
+            if (localNetworkPermission?.allRequiredPermissionsGranted == false) {
+                item("localNetworkPermission") {
+                    LocalNetworkPermissionCard(permissionState = localNetworkPermission)
+                }
+            }
+
+            if (notificationPermission?.allRequiredPermissionsGranted == false) {
+                item("notificationPermission") {
+                    NotificationPermissionCard(permissionState = notificationPermission)
                 }
             }
 
@@ -264,6 +283,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 val noShareApp = stringResource(R.string.setting_page_no_share_app)
                 SettingsGroupHeader(stringResource(R.string.setting_page_about))
                 SettingsGroup {
+                    SettingsRow(
+                        icon = HugeIcons.Rocket01,
+                        title = stringResource(R.string.setting_page_quick_start),
+                        onClick = { navController.navigate(Screen.QuickStart) },
+                    )
+                    SettingsDivider()
                     SettingsRow(
                         icon = HugeIcons.Clapping01,
                         title = stringResource(R.string.setting_page_about),

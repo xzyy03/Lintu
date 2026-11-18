@@ -36,8 +36,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Badge
@@ -306,7 +306,6 @@ fun ChatInput(
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 // Model Picker
-                                // 短按选模型，长按进 AI 供应商配置
                                 ModelSelectorButton(
                                     state = modelListState,
                                     onlyIcon = true,
@@ -324,7 +323,7 @@ fun ChatInput(
                                         onlyIcon = true,
                                     )
                                 }
-
+                                
                                 // MCP 服务器：与思维按钮同尺寸，用主色
                                 Surface(
                                     onClick = onOpenMcp,

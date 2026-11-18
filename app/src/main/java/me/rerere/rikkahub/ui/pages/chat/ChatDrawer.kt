@@ -331,19 +331,17 @@ fun ChatDrawerContent(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Spacer(Modifier.weight(1f))
-                        TextButton(
-                            onClick = {
-                                if (selectedIds.size == conversations.itemCount) {
-                                    selectedIds.clear()
-                                } else {
-                                    selectedIds.clear()
-                                    for (i in 0 until conversations.itemCount) {
-                                        (conversations.peek(i) as? ConversationListItem.Item)
-                                            ?.conversation?.let { selectedIds.add(it.id) }
-                                    }
+                        TextButton(onClick = {
+                            if (selectedIds.size == conversations.itemCount) {
+                                selectedIds.clear()
+                            } else {
+                                selectedIds.clear()
+                                for (i in 0 until conversations.itemCount) {
+                                    (conversations.peek(i) as? ConversationListItem.Item)
+                                        ?.conversation?.let { selectedIds.add(it.id) }
                                 }
-                            },
-                        ) {
+                            }
+                        }) {
                             Text(
                                 stringResource(
                                     if (selectedIds.size == conversations.itemCount) {
@@ -354,12 +352,10 @@ fun ChatDrawerContent(
                                 )
                             )
                         }
-                        TextButton(
-                            onClick = {
-                                selectionMode = false
-                                selectedIds.clear()
-                            },
-                        ) {
+                        TextButton(onClick = {
+                            selectionMode = false
+                            selectedIds.clear()
+                        }) {
                             Text(stringResource(R.string.chat_drawer_multi_select_exit))
                         }
                         TextButton(
@@ -377,39 +373,29 @@ fun ChatDrawerContent(
         }
     }
 
-
     // 批量删除确认
     if (showBatchDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showBatchDeleteConfirm = false },
             title = { Text(stringResource(R.string.chat_drawer_multi_delete_confirm_title)) },
             text = {
-                Text(
-                    stringResource(
-                        R.string.chat_drawer_multi_delete_confirm_text,
-                        selectedIds.size
-                    )
-                )
+                Text(stringResource(R.string.chat_drawer_multi_delete_confirm_text, selectedIds.size))
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        val ids = selectedIds.toList()
-                        val deletingCurrent = ids.any { it == current.id }
-                        showBatchDeleteConfirm = false
-                        selectionMode = false
-                        selectedIds.clear()
-                        scope.launch {
-                            ids.forEach { id ->
-                                repo.getConversationById(id)?.let { vm.deleteConversation(it).join() }
-                            }
-                            conversations.refresh()
-                            if (deletingCurrent) {
-                                navigateToChatPage(navController)
-                            }
+                TextButton(onClick = {
+                    val ids = selectedIds.toList()
+                    val deletingCurrent = ids.any { it == current.id }
+                    showBatchDeleteConfirm = false
+                    selectionMode = false
+                    selectedIds.clear()
+                    scope.launch {
+                        ids.forEach { id ->
+                            repo.getConversationById(id)?.let { vm.deleteConversation(it).join() }
                         }
+                        conversations.refresh()
+                        if (deletingCurrent) navigateToChatPage(navController)
                     }
-                ) {
+                }) {
                     Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -470,9 +456,7 @@ fun ChatDrawerContent(
                 selectionMode = selectionMode,
                 selectedIds = selectedIds.toSet(),
                 onToggleSelect = { conversation ->
-                    if (!selectedIds.remove(conversation.id)) {
-                        selectedIds.add(conversation.id)
-                    }
+                    if (!selectedIds.remove(conversation.id)) selectedIds.add(conversation.id)
                     if (selectedIds.isEmpty()) selectionMode = false
                 },
                 onLongPressEnterSelection = { conversation ->

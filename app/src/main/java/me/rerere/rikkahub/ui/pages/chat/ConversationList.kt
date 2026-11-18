@@ -91,7 +91,7 @@ fun ColumnScope.ConversationList(
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
     onMoveToFolder: (Conversation) -> Unit = {},
-    // 多选模式：selectedIds 非空或 selectionMode 为 true 时生效
+    // 多选模式
     selectionMode: Boolean = false,
     selectedIds: Set<Uuid> = emptySet(),
     onToggleSelect: (Conversation) -> Unit = {},
@@ -308,8 +308,7 @@ private fun ConversationItem(
                         .size(20.dp)
                         .clip(CircleShape)
                         .background(
-                            if (checked) MaterialTheme.colorScheme.primary
-                            else Color.Transparent
+                            if (checked) MaterialTheme.colorScheme.primary else Color.Transparent
                         )
                         .then(
                             if (checked) Modifier

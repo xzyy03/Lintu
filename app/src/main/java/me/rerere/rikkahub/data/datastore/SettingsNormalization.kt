@@ -8,8 +8,7 @@ internal fun Settings.normalized(): Settings =
  * 二改版一次性迁移：清空所有已落盘的供应商。
  *
  * 只把 DEFAULT_PROVIDERS 置空不够 —— 设备上早先版本写进 DataStore 的 providers
- * 会原样读回来。这里用 [Settings.providersCleared] 打一次性标记，
- * 执行过后用户自己添加的供应商不会再被清掉。
+ * 会原样读回来。用 [Settings.providersCleared] 打一次性标记，之后用户自己加的不会被清。
  */
 internal fun Settings.clearLegacyProviders(): Settings {
     if (providersCleared) return this

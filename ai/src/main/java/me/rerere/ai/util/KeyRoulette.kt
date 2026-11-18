@@ -45,7 +45,7 @@ private class DefaultKeyRoulette : KeyRoulette {
         val keyList = splitKey(keys)
         return when {
             keyList.isEmpty() -> keys
-            // 多 Key 配置指定轮询时按顺序取，否则沿用上游的随机
+            // 多 Key 配置指定轮询时按顺序取，否则沿用上游随机
             keys.parseMultiKeyConfig()?.strategy == KeyStrategy.ROUND_ROBIN -> {
                 val counter = ROUND_ROBIN_COUNTER.getOrPut(providerId.ifBlank { "default" }) {
                     java.util.concurrent.atomic.AtomicInteger()

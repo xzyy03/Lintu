@@ -307,7 +307,7 @@ private fun CardGroupScope.apiKeyItem(
 ) = textFieldItem(
     label = R.string.setting_provider_page_api_key,
     value = apiKey,
-    // 不 trim：多 Key 用换行分隔，trim 会把换行吃掉
+    // 不 trim：多 Key 用换行分隔，trim 会吃掉换行
     onValueChange = { onValueChange(it) },
     secret = true,
     minLines = 1,
@@ -331,8 +331,7 @@ private fun CardGroupScope.apiKeyItem(
 
 /**
  * 多 Key 模式开关 + 管理入口。
- *
- * CardGroup 的 DSL 不是 @Composable，所以文案与状态由调用方算好传入。
+ * CardGroup 的 DSL 不是 @Composable，文案与状态由调用方算好传入。
  */
 private fun CardGroupScope.multiKeyItem(
     apiKey: String,
@@ -345,7 +344,6 @@ private fun CardGroupScope.multiKeyItem(
     onValueChange: (String) -> Unit,
 ) {
     val enabled = config?.enabled == true
-
     switchItem(
         checked = enabled,
         onCheckedChange = { on ->
@@ -387,6 +385,7 @@ private fun ProviderConfigureOpenAI(
 
     CardGroup {
         nameItem(provider, onEdit)
+        // 多 Key 模式下 apiKey 存的是配置 JSON，不展示原始输入框
         if (multiKeyConfig?.enabled != true) {
             apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
         }
@@ -603,6 +602,7 @@ private fun ProviderConfigureClaude(
     val mkTotal = stringResource(R.string.multi_key_total)
     CardGroup {
         nameItem(provider, onEdit)
+        // 多 Key 模式下 apiKey 存的是配置 JSON，不展示原始输入框
         if (multiKeyConfig?.enabled != true) {
             apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
         }
@@ -695,7 +695,8 @@ private fun ProviderConfigureGoogle(
     CardGroup {
         nameItem(provider, onEdit)
         if (!useServiceAccount) {
-            if (multiKeyConfig?.enabled != true) {
+            // 多 Key 模式下 apiKey 存的是配置 JSON，不展示原始输入框
+        if (multiKeyConfig?.enabled != true) {
             apiKeyItem(provider.apiKey) { onEdit(provider.copy(apiKey = it)) }
         }
         multiKeyItem(
@@ -739,11 +740,15 @@ private fun ProviderConfigureGoogle(
                 onCheckedChange = { onEdit(provider.copy(useServiceAccount = it)) },
                 headlineContent = { Text(stringResource(R.string.setting_provider_page_use_service_account)) },
             )
-        } else {
+        }
+        if (!provider.vertexAI || useServiceAccount) {
             switchItem(
                 checked = provider.useInteractionsApi,
                 onCheckedChange = { onEdit(provider.copy(useInteractionsApi = it)) },
                 headlineContent = { Text("Interactions API (Beta)") },
+                supportingContent = if (useServiceAccount) {
+                    { Text("Vertex AI only supports the global, us and eu locations; other locations use generateContent") }
+                } else null,
             )
         }
     }

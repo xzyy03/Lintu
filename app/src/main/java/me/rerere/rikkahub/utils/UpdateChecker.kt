@@ -8,11 +8,11 @@ import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -47,16 +47,14 @@ class UpdateChecker(
     val updateState: StateFlow<UiState<UpdateInfo>> = state.asStateFlow()
 
     /**
-     * 主动检查更新。关于页点「版本更新」时调用。
-     * 已有请求在跑时复用同一个 Job，避免并发重复请求。
+     * 主动检查更新。关于页点「版本更新」时调用；已有请求在跑时复用同一 Job。
      */
     fun refresh() {
         if (job?.isActive == true) return
         job = scope.launch {
             state.value = UiState.Loading
             state.value = try {
-                state.value = UiState.Success(fetch())
-                state.value
+                UiState.Success(fetch())
             } catch (e: Exception) {
                 UiState.Error(e)
             }
@@ -77,8 +75,8 @@ class UpdateChecker(
     }
 
     /**
-     * 把 GitHub Releases API 的 latest 响应映射成应用内使用的 [UpdateInfo]。
-     * tag 形如 v3.1.2-lintu，去掉前缀 v 后作为版本号；asset 只取 apk。
+     * 把 GitHub Releases API 的 latest 响应映射成 [UpdateInfo]。
+     * tag 形如 v3.3.0-lintu，去掉前缀 v 后作为版本号；asset 只取 apk。
      */
     private fun parseGithubRelease(body: String): UpdateInfo {
         val root = json.parseToJsonElement(body).jsonObject
@@ -86,31 +84,20 @@ class UpdateChecker(
         val version = tag.removePrefix("v")
         val changelog = root["body"]?.jsonPrimitive?.contentOrNull.orEmpty()
         val publishedAt = root["published_at"]?.jsonPrimitive?.contentOrNull.orEmpty()
-        val downloads = root["assets"]?.jsonArray.orEmpty()
-            .mapNotNull { element ->
-                val asset = element.jsonObject
-                val name = asset["name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                if (!name.endsWith(".apk", ignoreCase = true)) return@mapNotNull null
-                val url = asset["browser_download_url"]?.jsonPrimitive?.contentOrNull
-                    ?: return@mapNotNull null
-                val sizeBytes = asset["size"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
-                UpdateDownload(
-                    name = name,
-                    url = url,
-                    size = if (sizeBytes > 0) {
-                        "%.1f MB".format(sizeBytes / 1024.0 / 1024.0)
-                    } else {
-                        ""
-                    },
-                )
-            }
+        val downloads = root["assets"]?.jsonArray.orEmpty().mapNotNull { element ->
+            val asset = element.jsonObject
+            val name = asset["name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            if (!name.endsWith(".apk", ignoreCase = true)) return@mapNotNull null
+            val url = asset["browser_download_url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val bytes = asset["size"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
+            UpdateDownload(
+                name = name,
+                url = url,
+                size = if (bytes > 0) "%.1f MB".format(bytes / 1024.0 / 1024.0) else "",
+            )
+        }
         if (version.isBlank()) throw Exception("Empty release tag")
-        return UpdateInfo(
-            version = version,
-            publishedAt = publishedAt,
-            changelog = changelog,
-            downloads = downloads,
-        )
+        return UpdateInfo(version, publishedAt, changelog, downloads)
     }
 
     fun downloadUpdate(context: Context, download: UpdateDownload) {

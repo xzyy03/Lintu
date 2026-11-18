@@ -135,6 +135,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingMediaPage
 import me.rerere.rikkahub.ui.pages.setting.SettingMediaProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
+import me.rerere.rikkahub.ui.pages.quickstart.QuickStartPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
@@ -337,7 +338,7 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
-                        // 只做水平位移 + 轻微淡入淡出：去掉 scale 缩放，避免画面突然缩小，也更跟手
+                        // 只做水平位移 + 轻微淡入淡出：去掉 scale 缩放，避免画面突然缩小
                         transitionSpec = {
                             if (backStack.size == 1) {
                                 fadeIn(tween(220)) togetherWith fadeOut(tween(180))
@@ -550,6 +551,10 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.SettingDonate> {
                                 SettingDonatePage()
+                            }
+
+                            entry<Screen.QuickStart> {
+                                QuickStartPage()
                             }
 
                             entry<Screen.SettingFiles> {
@@ -803,6 +808,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingDonate : Screen
+
+    @Serializable
+    data object QuickStart : Screen
 
     @Serializable
     data object SettingFiles : Screen
